@@ -68,6 +68,7 @@ const booksServices = {
         {
           $lookup: {
             from: "rentals",
+
             localField: "_id",
             foreignField: "bookId",
             as: "topCategory",
