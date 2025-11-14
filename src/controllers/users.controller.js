@@ -124,19 +124,47 @@ const userService = {
   categoryTreads: async (req, res) => {
     try {
       const { id } = req.params;
-      const fetchUserRentals = await User.aggregate([
+      const fetchUserRentals = await Rental.aggregate([
         {
           $match: {
-            _id: id,
+            userId: id,
           },
         },
         {
           $lookup: {
-            from: "rentals",
-            localField: "_id",
-            foreignField: "userId",
+            from: "books",
+            localField: "bookId",
+            foreignField: "_id",
             as: "userDetails",
           },
+        },
+        {
+          $unwind: "$userDetails",
+        },
+        {
+          $group: {
+            _id: {
+              category: "$userDetails.category",
+            },
+            topRented: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            category: "$_id.category",
+            topRented: 1,
+          },
+        },
+        {
+          $sort: {
+            topRented: -1,
+          },
+        },
+        {
+          $limit: 2,
         },
       ]);
 
