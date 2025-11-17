@@ -20,4 +20,5 @@ route.get("/books/price/avg-by-category", booksServices.avgByCategoryPrice);
 
 route.get("/rentals/active", rentalService.rentalActive);
 route.get("/rentals/revenue/monthly", rentalService.revenueMonthly);
+route.get("/rentals/details", rentalService.rentalsDetails);
 module.exports = route;
