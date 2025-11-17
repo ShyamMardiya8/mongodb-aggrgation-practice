@@ -89,6 +89,55 @@ const rentalService = {
       console.log(error.message);
     }
   },
+  rentalsDetails: async (req, res) => {
+    try {
+      const rentalDetails = await Rental.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $unwind: "$userDetails",
+        },
+        {
+          $lookup: {
+            from: "books",
+            localField: "bookId",
+            foreignField: "_id",
+            as: "bookDetails",
+          },
+        },
+        {
+          $unwind: "$bookDetails",
+        },
+        {
+          $project: {
+            rentalId: "$_id",
+            users: "$userDetails",
+            book: "$bookDetails",
+            rentedAt: 1,
+            returnedAt: 1,
+            rentalPrice: 1,
+            status: {
+              $cond: [{ $eq: ["$returnedAt", null] }, "active", "returned"],
+            },
+          },
+        },
+      ]);
+      return addResponse(res, {
+        success: true,
+        status: 200,
+        message: "rental details fetched successfully",
+        data: rentalDetails,
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  },
 };
 
 module.exports = rentalService;
