@@ -138,6 +138,79 @@ const rentalService = {
       console.log(error.message);
     }
   },
+  userSummery: async (req, res) => {
+    try {
+      const fetchUserSummary = await Rental.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        {
+          $unwind: "$user",
+        },
+
+        // STEP 1: Calculate fine for each rental
+        {
+          $project: {
+            userId: "$user._id",
+            user: {
+              name: "$user.name",
+              email: "$user.email",
+              city: "$user.city",
+            },
+            fine: {
+              $multiply: [
+                {
+                  $dateDiff: {
+                    startDate: "$rentedAt",
+                    endDate: {
+                      $ifNull: ["$returnedAt", new Date()], // if not returned, use today
+                    },
+                    unit: "day",
+                  },
+                },
+                5, // fine rate
+              ],
+            },
+          },
+        },
+
+        // STEP 2: Group by user
+        {
+          $group: {
+            _id: "$userId",
+            user: { $first: "$user" },
+            totalRentals: { $sum: 1 },
+            totalFine: { $sum: "$fine" },
+          },
+        },
+
+        // STEP 3: Clean output
+        {
+          $project: {
+            _id: 0,
+            userId: "$_id",
+            user: 1,
+            totalRentals: 1,
+            totalFine: 1,
+          },
+        },
+      ]);
+
+      return addResponse(res, {
+        message: "fetch user summery",
+        status: 200,
+        success: true,
+        data: fetchUserSummary,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  },
 };
 
 module.exports = rentalService;
